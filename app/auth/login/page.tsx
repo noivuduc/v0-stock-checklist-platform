@@ -9,11 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -27,31 +29,24 @@ export default function LoginPage() {
     const supabase = createClient()
 
     try {
-      console.log("Attempting login...")
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      console.log("Login response:", { data, error })
-
       if (error) {
-        console.error("Login error:", error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
       if (!data.session) {
-        console.error("No session created")
         setError("Failed to create session")
         setIsLoading(false)
         return
       }
 
-      console.log("Session created successfully, redirecting...")
-      await new Promise(resolve => setTimeout(resolve, 500))
-      window.location.replace('/dashboard')
+      window.location.href = '/dashboard'
     } catch (error: unknown) {
       console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
