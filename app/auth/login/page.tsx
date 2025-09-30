@@ -27,17 +27,29 @@ export default function LoginPage() {
     const supabase = createClient()
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting login...")
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log("Login response:", { data, error })
+
       if (error) {
+        console.error("Login error:", error)
         setError(error.message)
         setIsLoading(false)
         return
       }
 
+      if (!data.session) {
+        console.error("No session created")
+        setError("Failed to create session")
+        setIsLoading(false)
+        return
+      }
+
+      console.log("Session created successfully, redirecting...")
       await new Promise(resolve => setTimeout(resolve, 500))
       window.location.replace('/dashboard')
     } catch (error: unknown) {
