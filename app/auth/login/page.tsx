@@ -8,30 +8,43 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-import { useState } from "react"
-import { login } from "./actions"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
 
-    try {
-      const formData = new FormData(e.currentTarget)
-      const result = await login(formData)
+    const formData = new FormData(e.currentTarget)
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
 
-      if (result?.error) {
-        setError(result.error)
-        setIsLoading(false)
+    const supabase = createClient()
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error.message)
+        return
       }
+
+      startTransition(() => {
+        router.refresh()
+        router.push('/dashboard')
+      })
     } catch (error: unknown) {
       console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
-      setIsLoading(false)
     }
   }
 
@@ -73,8 +86,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Signing in..." : "Sign In"}
               </Button>
 
               <div className="text-center">
