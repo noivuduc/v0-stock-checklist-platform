@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const {
       data: { user },
@@ -42,7 +42,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const {
       data: { user },
@@ -115,7 +115,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createClient()
 
     const {
       data: { user },
