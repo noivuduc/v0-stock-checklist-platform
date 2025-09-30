@@ -232,7 +232,7 @@ function evaluateCondition(leftValue: any, operator: string, rightValue: any): b
 
 export async function POST(request: Request) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const {
       data: { user },
