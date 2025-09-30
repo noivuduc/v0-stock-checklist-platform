@@ -8,18 +8,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-import { useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
+    setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
@@ -35,16 +34,16 @@ export default function LoginPage() {
 
       if (error) {
         setError(error.message)
+        setIsLoading(false)
         return
       }
 
-      startTransition(() => {
-        router.refresh()
-        router.push('/dashboard')
-      })
+      await new Promise(resolve => setTimeout(resolve, 500))
+      window.location.replace('/dashboard')
     } catch (error: unknown) {
       console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
+      setIsLoading(false)
     }
   }
 
@@ -86,8 +85,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending ? "Signing in..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign In"}
               </Button>
 
               <div className="text-center">
