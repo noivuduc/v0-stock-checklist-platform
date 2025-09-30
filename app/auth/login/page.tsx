@@ -8,50 +8,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useState, useTransition } from "react"
+import { login } from "./actions"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
 
-    const supabase = createClient()
-
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setError(error.message)
-        setIsLoading(false)
-        return
+    startTransition(async () => {
+      const result = await login(formData)
+      if (result?.error) {
+        setError(result.error)
       }
-
-      if (!data.session) {
-        setError("Failed to create session")
-        setIsLoading(false)
-        return
-      }
-
-      window.location.href = '/dashboard'
-    } catch (error: unknown) {
-      console.error("Login failed:", error)
-      setError(error instanceof Error ? error.message : "An error occurred")
-      setIsLoading(false)
-    }
+    })
   }
 
   return (
@@ -92,8 +67,8 @@ export default function LoginPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Signing in..." : "Sign In"}
               </Button>
 
               <div className="text-center">
