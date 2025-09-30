@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
-export const dynamic = 'force-dynamic'
 import { NextResponse } from "next/server"
+
+export const dynamic = 'force-dynamic'
 
 // Financial Datasets API integration
 async function fetchStockData(symbol: string) {
