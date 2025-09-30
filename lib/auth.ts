@@ -1,10 +1,8 @@
-// Authentication utilities and session management
 import type { User } from "./types"
+import { createClient } from "./supabase/client"
 
-// Mock authentication for development - replace with real auth service
 export class AuthService {
   private static instance: AuthService
-  private currentUser: User | null = null
 
   private constructor() {}
 
@@ -17,36 +15,27 @@ export class AuthService {
 
   async signIn(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
     try {
-      // Mock authentication - replace with real API call
-      const mockUsers: User[] = [
-        {
-          id: 1,
-          email: "demo@example.com",
-          created_at: new Date().toISOString(),
-          subscription_tier: "free",
-          first_name: "Demo",
-          last_name: "User",
-          active: true,
-        },
-        {
-          id: 2,
-          email: "premium@example.com",
-          created_at: new Date().toISOString(),
-          subscription_tier: "premium",
-          first_name: "Premium",
-          last_name: "User",
-          active: true,
-        },
-      ]
+      const supabase = createClient()
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      const user = mockUsers.find((u) => u.email === email)
-      if (user && password === "password") {
-        this.currentUser = user
-        localStorage.setItem("auth_user", JSON.stringify(user))
-        return { user, error: null }
+      if (authError || !authData.user) {
+        return { user: null, error: authError?.message || "Invalid email or password" }
       }
 
-      return { user: null, error: "Invalid email or password" }
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authData.user.id)
+        .maybeSingle()
+
+      if (userError || !userData) {
+        return { user: null, error: "Failed to fetch user data" }
+      }
+
+      return { user: userData as User, error: null }
     } catch (error) {
       return { user: null, error: "Authentication failed" }
     }
@@ -59,57 +48,72 @@ export class AuthService {
     lastName: string,
   ): Promise<{ user: User | null; error: string | null }> {
     try {
-      // Mock user creation - replace with real API call
-      const newUser: User = {
-        id: Math.floor(Math.random() * 1000) + 100,
+      const supabase = createClient()
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        created_at: new Date().toISOString(),
-        subscription_tier: "free",
-        first_name: firstName,
-        last_name: lastName,
-        active: true,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+          },
+        },
+      })
+
+      if (authError || !authData.user) {
+        return { user: null, error: authError?.message || "Registration failed" }
       }
 
-      this.currentUser = newUser
-      localStorage.setItem("auth_user", JSON.stringify(newUser))
-      return { user: newUser, error: null }
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authData.user.id)
+        .maybeSingle()
+
+      if (userError || !userData) {
+        return { user: null, error: "Failed to fetch user profile" }
+      }
+
+      return { user: userData as User, error: null }
     } catch (error) {
       return { user: null, error: "Registration failed" }
     }
   }
 
   async signOut(): Promise<void> {
-    this.currentUser = null
-    localStorage.removeItem("auth_user")
+    const supabase = createClient()
+    await supabase.auth.signOut()
   }
 
-  getCurrentUser(): User | null {
-    if (this.currentUser) {
-      return this.currentUser
-    }
+  async getCurrentUser(): Promise<User | null> {
+    try {
+      const supabase = createClient()
+      const { data: { user: authUser } } = await supabase.auth.getUser()
 
-    // Try to restore from localStorage
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("auth_user")
-      if (stored) {
-        try {
-          this.currentUser = JSON.parse(stored)
-          return this.currentUser
-        } catch {
-          localStorage.removeItem("auth_user")
-        }
+      if (!authUser) {
+        return null
       }
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .maybeSingle()
+
+      return userData as User | null
+    } catch {
+      return null
     }
-
-    return null
   }
 
-  isAuthenticated(): boolean {
-    return this.getCurrentUser() !== null
+  async isAuthenticated(): Promise<boolean> {
+    const user = await this.getCurrentUser()
+    return user !== null
   }
 
-  hasSubscription(tier: "free" | "premium" | "enterprise"): boolean {
-    const user = this.getCurrentUser()
+  async hasSubscription(tier: "free" | "premium" | "enterprise"): Promise<boolean> {
+    const user = await this.getCurrentUser()
     if (!user) return false
 
     const tierLevels = { free: 1, premium: 2, enterprise: 3 }
