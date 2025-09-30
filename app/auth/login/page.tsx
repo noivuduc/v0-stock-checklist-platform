@@ -2,49 +2,32 @@
 
 import type React from "react"
 
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { login } from "./actions"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+      const formData = new FormData(e.currentTarget)
+      const result = await login(formData)
 
-      if (error) {
-        console.error("Login error:", error)
-        throw error
+      if (result?.error) {
+        setError(result.error)
+        setIsLoading(false)
       }
-
-      if (!data.session) {
-        throw new Error("No session created")
-      }
-
-      console.log("Login successful, redirecting...")
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      window.location.href = "/dashboard"
     } catch (error: unknown) {
       console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
@@ -72,10 +55,9 @@ export default function LoginPage() {
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -84,10 +66,9 @@ export default function LoginPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
+                  name="password"
                   type="password"
                   placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
