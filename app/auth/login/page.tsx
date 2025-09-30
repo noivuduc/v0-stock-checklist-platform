@@ -26,13 +26,27 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
-      if (error) throw error
+
+      if (error) {
+        console.error("Login error:", error)
+        throw error
+      }
+
+      if (!data.session) {
+        throw new Error("No session created")
+      }
+
+      console.log("Login successful, redirecting...")
+
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       window.location.href = "/dashboard"
     } catch (error: unknown) {
+      console.error("Login failed:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
     }
