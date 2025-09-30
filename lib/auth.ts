@@ -60,7 +60,7 @@ export class AuthService {
           },
         },
       })
-
+      console.log(authError)
       if (authError || !authData.user) {
         return { user: null, error: authError?.message || "Registration failed" }
       }
