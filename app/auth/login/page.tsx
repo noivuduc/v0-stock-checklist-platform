@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { login } from "./actions"
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -25,6 +27,9 @@ export default function LoginPage() {
       const result = await login(formData)
       if (result?.error) {
         setError(result.error)
+      } else if (result?.success) {
+        router.push('/dashboard')
+        router.refresh()
       }
     })
   }
